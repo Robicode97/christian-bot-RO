@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Christian AI Assistant</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lato:wght@300;400;700&display=swap"
+        rel="stylesheet" />
+    <style>
+        /* ============================================================
+       CSS VARIABLES & RESET
+    ============================================================ */
+        :root {
+            --bg-main: #0a1628;
+            --bg-card: #0e1f3d;
+            --bg-input: #132040;
+            --bg-user: linear-gradient(135deg, #1a4a8a, #0d6efd);
+            --bg-bot: linear-gradient(135deg, #132040, #1a2f5a);
+            --accent: #4da6ff;
+            --accent-glow: rgba(77, 166, 255, 0.25);
+            --gold: #f0c040;
+            --text-primary: #e8f0fe;
+            --text-secondary: #8ab4d8;
+            --text-muted: #5a7a9a;
+            --border: rgba(77, 166, 255, 0.18);
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            --radius-lg: 18px;
+            --radius-msg: 20px;
+            --font-heading: 'Cinzel', serif;
+            --font-body: 'Lato', sans-serif;
+            --transition: 0.3s ease;
+        }
+
+        body.light {
+            --bg-main: #ddeeff;
+            --bg-card: #f0f7ff;
+            --bg-input: #ffffff;
+            --bg-user: linear-gradient(135deg, #1a6abf, #0d6efd);
+            --bg-bot: linear-gradient(135deg, #e6f0ff, #d0e8ff);
+            --accent: #0056cc;
+            --accent-glow: rgba(0, 86, 204, 0.15);
+            --gold: #c08000;
+            --text-primary: #0a1628;
+            --text-secondary: #1a4080;
+            --text-muted: #5080b0;
+            --border: rgba(0, 86, 204, 0.2);
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            height: 100%;
+            font-family: var(--font-body);
+            background: var(--bg-main);
+            color: var(--text-primary);
+            transition: background var(--transition), color var(--transition);
+        }
+
+        /* ============================================================
+       LAYOUT WRAPPER
+    ============================================================ */
+        .app-wrapper {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-width: 860px;
+            margin: 0 auto;
+            padding: 0 12px;
+        }
+
+        /* ============================================================
+       HEADER
+    ============================================================ */
+        header {
+            padding: 16px 0 10px;
+            text-align: center;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .header-top {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            margin-bottom: 4px;
+        }
+
+        .cross-icon {
+            font-size: 2rem;
+            color: var(--gold);
+            text-shadow: 0 0 12px var(--gold);
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.08);
+                opacity: 0.85;
+            }
+        }
+
+        header h1 {
+            font-family: var(--font-heading);
+            font-size: clamp(1.2rem, 3vw, 1.75rem);
+            color: var(--accent);
+            letter-spacing: 0.04em;
+            text-shadow: 0 0 18px var(--accent-glow);
+        }
+
+        .header-subtitle {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .header-creator {
+            font-size: 0.72rem;
+            color: var(--gold);
+            letter-spacing: 0.12em;
+            margin-top: 3px;
+            font-weight: 700;
+            text-transform: uppercase;
+            opacity: 0.9;
+        }
+
+        .header-actions {
+            position: absolute;
+            right: 0;
+            top: 16px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .icon-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 50%;
+            width: 38px;
+            height: 38px;
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            transition: background var(--transition), color var(--transition), box-shadow var(--transition);
+        }
+
+        .icon-btn:hover {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 0 12px var(--accent-glow);
+        }
+
+        /* ============================================================
+       CHAT AREA
+    ============================================================ */
+        .chat-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: background var(--transition), border-color var(--transition);
+        }
+
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 18px;
+            scroll-behavior: smooth;
+        }
+
+        /* Custom scrollbar */
+        .messages-area::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .messages-area::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .messages-area::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 4px;
+            opacity: 0.5;
+        }
+
+        /* ============================================================
+       MESSAGES
+    ============================================================ */
+        .message {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            margin-bottom: 16px;
+            animation: fadeUp 0.35s ease forwards;
+            opacity: 0;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(14px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+        }
+
+        .bot-avatar {
+            background: linear-gradient(135deg, #1a4a8a, #4da6ff);
+            box-shadow: 0 0 10px rgba(77, 166, 255, 0.4);
+        }
+
+        .user-avatar {
+            background: linear-gradient(135deg, #0d6efd, #1a4a8a);
+        }
+
+        .bubble-wrap {
+            max-width: min(75%, 520px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message.user .bubble-wrap {
+            align-items: flex-end;
+        }
+
+        .message.bot .bubble-wrap {
+            align-items: flex-start;
+        }
+
+        .bubble {
+            padding: 12px 16px;
+            border-radius: var(--radius-msg);
+            line-height: 1.6;
+            font-size: 0.92rem;
+            position: relative;
+            word-break: break-word;
+        }
+
+        .message.user .bubble {
+            background: var(--bg-user);
+            color: #fff;
+            border-bottom-right-radius: 6px;
+            box-shadow: 0 4px 16px rgba(13, 110, 253, 0.35);
+        }
+
+        .message.bot .bubble {
+            background: var(--bg-bot);
+            color: var(--text-primary);
+            border-bottom-left-radius: 6px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .bubble .verse-tag {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 4px 10px;
+            background: rgba(77, 166, 255, 0.12);
+            border-left: 3px solid var(--gold);
+            border-radius: 0 8px 8px 0;
+            font-size: 0.8rem;
+            color: var(--gold);
+            font-style: italic;
+        }
+
+        .timestamp {
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+            padding: 0 4px;
+        }
+
+        /* ============================================================
+       TYPING INDICATOR
+    ============================================================ */
+        .typing-indicator {
+            display: none;
+            align-items: flex-end;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .typing-indicator.visible {
+            display: flex;
+        }
+
+        .typing-bubble {
+            background: var(--bg-bot);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-msg);
+            border-bottom-left-radius: 6px;
+            padding: 12px 18px;
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+
+        .typing-bubble span {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: bounce 1.2s ease-in-out infinite;
+            display: inline-block;
+        }
+
+        .typing-bubble span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-bubble span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            80%,
+            100% {
+                transform: translateY(0);
+                opacity: 0.5;
+            }
+
+            40% {
+                transform: translateY(-7px);
+                opacity: 1;
+            }
+        }
+
+        /* ============================================================
+       SUGGESTIONS
+    ============================================================ */
+        .suggestions {
+            padding: 8px 18px 4px;
+            display: flex;
+            gap: 7px;
+            flex-wrap: wrap;
+        }
+
+        .suggestion-chip {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 5px 12px;
+            font-size: 0.75rem;
+            color: var(--accent);
+            cursor: pointer;
+            transition: background var(--transition), color var(--transition);
+            white-space: nowrap;
+        }
+
+        .suggestion-chip:hover {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+
+        /* ============================================================
+       INPUT AREA
+    ============================================================ */
+        .input-area {
+            padding: 12px 14px;
+            border-top: 1px solid var(--border);
+            background: var(--bg-card);
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            transition: background var(--transition);
+        }
+
+        .input-field {
+            flex: 1;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 11px 18px;
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            outline: none;
+            resize: none;
+            max-height: 120px;
+            line-height: 1.5;
+            transition: border-color var(--transition), box-shadow var(--transition);
+        }
+
+        .input-field::placeholder {
+            color: var(--text-muted);
+        }
+
+        .input-field:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .send-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1a6abf, #0d6efd);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            color: #fff;
+            flex-shrink: 0;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            box-shadow: 0 4px 14px rgba(13, 110, 253, 0.45);
+        }
+
+        .send-btn:hover {
+            transform: scale(1.08);
+            box-shadow: 0 6px 20px rgba(13, 110, 253, 0.6);
+        }
+
+        .send-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* ============================================================
+       FOOTER
+    ============================================================ */
+        footer {
+            text-align: center;
+            padding: 8px 0 14px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            flex-shrink: 0;
+        }
+
+        /* ============================================================
+       RESPONSIVE
+    ============================================================ */
+        @media (max-width: 500px) {
+            .header-actions {
+                top: 10px;
+            }
+
+            .bubble {
+                font-size: 0.87rem;
+            }
+
+            .suggestions {
+                padding: 6px 12px 2px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app-wrapper">
+
+        <!-- HEADER -->
+        <header>
+            <div class="header-top">
+                <span class="cross-icon">✝</span>
+                <h1>Christian AI Assistant</h1>
+                <span class="cross-icon">✝</span>
+            </div>
+            <div class="header-subtitle">Your Spiritual Knowledge Guide</div>
+            <div class="header-creator">Created and Developed by ROBERA ALEMU</div>
+            <div class="header-actions">
+                <button class="icon-btn" id="themeBtn" title="Toggle Theme">🌙</button>
+                <button class="icon-btn" id="clearBtn" title="Clear Chat">🗑️</button>
+            </div>
+        </header>
+
+        <!-- CHAT CONTAINER -->
+        <div class="chat-container">
+
+            <!-- MESSAGES AREA -->
+            <div class="messages-area" id="messagesArea">
+                <!-- Messages injected by JS -->
+            </div>
+
+            <!-- TYPING INDICATOR -->
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="avatar bot-avatar">✝</div>
+                <div class="typing-bubble">
+                    <span></span><span></span><span></span>
+                </div>
+            </div>
+
+            <!-- SUGGESTION CHIPS -->
+            <div class="suggestions" id="suggestionsArea">
+                <span class="suggestion-chip" data-query="Who is Jesus Christ?">Who is Jesus?</span>
+                <span class="suggestion-chip" data-query="What is salvation?">Salvation</span>
+                <span class="suggestion-chip" data-query="How do I pray?">How to Pray</span>
+                <span class="suggestion-chip" data-query="What does the Bible say about love?">Love</span>
+                <span class="suggestion-chip" data-query="What is the Holy Spirit?">Holy Spirit</span>
+                <span class="suggestion-chip" data-query="What is heaven?">Heaven</span>
+                <span class="suggestion-chip" data-query="What does the Bible say about hope?">Hope</span>
+            </div>
+
+            <!-- INPUT AREA -->
+            <div class="input-area">
+                <textarea class="input-field" id="inputField" rows="1"
+                    placeholder="Ask a Christian question… e.g. 'What is faith?'"></textarea>
+                <button class="send-btn" id="sendBtn" title="Send">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- FOOTER -->
+        <footer>
+            🙏 Seek and you shall find — Matthew 7:7 &nbsp;|&nbsp; Christian AI Assistant &copy; 2025
+        </footer>
+
+    </div><!-- end app-wrapper -->
+
+
+    <script>
+        "use strict";
+
+        /* ============================================================
+           CHRISTIAN Q&A DATABASE
+        ============================================================ */
+        const QA_DATABASE = [
+
+            // ── JESUS CHRIST ───────────────────────────────────────────
+            {
+                keywords: ["who is jesus", "jesus christ", "who jesus"],
+                answer: "Jesus Christ is the Son of God, the second person of the Holy Trinity. He is fully God and fully human. He was born of the Virgin Mary in Bethlehem, lived a sinless life, performed miracles, died on the cross for our sins, and rose from the dead on the third day, conquering sin and death forever.",
+                verse: "John 3:16 — 'For God so loved the world that He gave His one and only Son, that whoever believes in Him shall not perish but have eternal life.'"
+            },
+            {
+                keywords: ["why did jesus die", "death of jesus", "jesus cross", "crucifixion"],
+                answer: "Jesus died on the cross to pay the penalty for humanity's sins. Because God is holy and just, sin requires a price — death. Jesus, being sinless, offered Himself as the perfect sacrifice so that we could be forgiven and reconciled to God. His death was an act of the greatest love ever known.",
+                verse: "Romans 5:8 — 'But God demonstrates His own love for us in this: While we were still sinners, Christ died for us.'"
+            },
+            {
+                keywords: ["resurrection", "jesus rose", "rose from dead", "risen"],
+                answer: "The resurrection of Jesus is the cornerstone of Christian faith. Three days after His crucifixion, Jesus rose bodily from the dead, proving He is God, that death has no final power over Him, and guaranteeing the resurrection and eternal life of all who believe in Him.",
+                verse: "1 Corinthians 15:17 — 'And if Christ has not been raised, your faith is futile; you are still in your sins.'"
+            },
+            {
+                keywords: ["second coming", "return of jesus", "jesus coming back"],
+                answer: "Christians believe Jesus will return to earth a second time — not as a suffering servant, but as the glorious King of Kings. He will judge the living and the dead, establish His eternal kingdom, and make all things new. This hope encourages Christians to live faithfully every day.",
+                verse: "Revelation 22:12 — 'Look, I am coming soon! My reward is with me, and I will give to each person according to what they have done.'"
+            },
+
+            // ── GOD ────────────────────────────────────────────────────
+            {
+                keywords: ["who is god", "nature of god", "describe god", "what is god"],
+                answer: "God is the eternal, all-powerful, all-knowing, and all-present Creator of the universe. He is perfectly holy, just, and loving. Christianity teaches that God exists as one Being in three Persons — Father, Son, and Holy Spirit — known as the Trinity. He is personal, relational, and deeply cares for every person He created.",
+                verse: "1 John 4:8 — 'Whoever does not love does not know God, because God is love.'"
+            },
+            {
+                keywords: ["trinity", "father son holy spirit", "godhead"],
+                answer: "The Trinity is the Christian teaching that God is one Being existing in three co-equal, co-eternal Persons: God the Father (Creator and sustainer), God the Son — Jesus (Savior and Redeemer), and God the Holy Spirit (Comforter and Sanctifier). They are distinct yet perfectly unified in nature, will, and purpose.",
+                verse: "Matthew 28:19 — 'Baptizing them in the name of the Father and of the Son and of the Holy Spirit.'"
+            },
+            {
+                keywords: ["how close to god", "closer to god", "relationship with god", "know god"],
+                answer: "You draw closer to God through prayer (talking and listening to Him), reading the Bible (God's Word), worshipping Him sincerely, obeying His commands, confessing sin, serving others, and spending time with fellow believers. God promises that if you draw near to Him, He will draw near to you.",
+                verse: "James 4:8 — 'Come near to God and He will come near to you.'"
+            },
+
+            // ── BIBLE ──────────────────────────────────────────────────
+            {
+                keywords: ["what is the bible", "about the bible", "holy bible", "scripture"],
+                answer: "The Bible is the holy Scripture of Christianity — the inspired Word of God written by over 40 authors across 1,500+ years, yet perfectly unified in its message. It contains 66 books (39 Old Testament, 27 New Testament) and covers history, poetry, prophecy, wisdom, and the life of Jesus. It is the ultimate guide for faith, morality, and eternal life.",
+                verse: "2 Timothy 3:16 — 'All Scripture is God-breathed and is useful for teaching, rebuking, correcting and training in righteousness.'"
+            },
+            {
+                keywords: ["ten commandments", "10 commandments"],
+                answer: "The Ten Commandments (Exodus 20) are God's foundational moral law:\n1. No other gods before Me.\n2. No idols.\n3. Do not misuse God's name.\n4. Keep the Sabbath holy.\n5. Honor your father and mother.\n6. Do not murder.\n7. Do not commit adultery.\n8. Do not steal.\n9. Do not lie.\n10. Do not covet.\nJesus summarized these as: love God with all your heart, and love your neighbor as yourself.",
+                verse: "Matthew 22:37-39 — 'Love the Lord your God… and love your neighbor as yourself.'"
+            },
+            {
+                keywords: ["bible verse encouragement", "encouraging verse", "uplifting scripture"],
+                answer: "Here are powerful encouraging Bible verses:\n• Jeremiah 29:11 — God has plans to prosper you and give you hope.\n• Isaiah 41:10 — Do not fear; God is with you and will strengthen you.\n• Philippians 4:13 — You can do all things through Christ who strengthens you.\n• Romans 8:28 — All things work together for good for those who love God.",
+                verse: "Jeremiah 29:11 — 'For I know the plans I have for you, declares the Lord, plans to prosper you and not to harm you, plans to give you hope and a future.'"
+            },
+
+            // ── PRAYER ────────────────────────────────────────────────
+            {
+                keywords: ["how do i pray", "how to pray", "prayer guide", "praying"],
+                answer: "Prayer is simply talking to God honestly and from your heart. You can follow the ACTS model:\n• Adoration — praise God for who He is.\n• Confession — admit your sins and ask forgiveness.\n• Thanksgiving — thank Him for His blessings.\n• Supplication — bring your requests and needs to Him.\nYou can pray anytime, anywhere, in any language. God hears every sincere prayer.",
+                verse: "Philippians 4:6 — 'Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God.'"
+            },
+            {
+                keywords: ["why pray", "importance of prayer", "why should i pray"],
+                answer: "Prayer is the lifeline of a Christian's relationship with God. Through prayer we communicate with our Creator, align our will with His, find strength in weakness, receive peace in anxiety, and experience His presence. Prayer changes situations — and more importantly, it changes us. It is the greatest privilege a human being can have.",
+                verse: "1 Thessalonians 5:17 — 'Pray continually.'"
+            },
+            {
+                keywords: ["does god answer prayer", "god hears prayer", "unanswered prayer"],
+                answer: "Yes — God always hears and answers prayer, but not always in the way or timing we expect. He answers in three ways: Yes (granting the request), Not yet (His timing is perfect), or No/Something better (He knows what is truly best for us). God's 'no' is never rejection — it is protection, redirection, or preparation for something greater.",
+                verse: "1 John 5:14 — 'This is the confidence we have in approaching God: that if we ask anything according to His will, He hears us.'"
+            },
+
+            // ── SALVATION ─────────────────────────────────────────────
+            {
+                keywords: ["what is salvation", "salvation meaning", "saved", "how to be saved"],
+                answer: "Salvation is the deliverance from sin and its eternal consequences — death and separation from God. In Christianity, salvation is a free gift from God received through faith in Jesus Christ. When you confess your sins, believe that Jesus died and rose for you, and surrender your life to Him, you are saved — forgiven, reconciled to God, and given eternal life.",
+                verse: "Ephesians 2:8-9 — 'For it is by grace you have been saved, through faith — and this is not from yourselves, it is the gift of God — not by works, so that no one can boast.'"
+            },
+            {
+                keywords: ["accept jesus", "give life to jesus", "become christian", "born again"],
+                answer: "To accept Jesus Christ as your Lord and Savior, you can pray from your heart:\n'Lord Jesus, I know I am a sinner. I believe You died for my sins and rose from the dead. I turn from my sins and invite You into my heart as my Lord and Savior. Thank You for saving me. Amen.'\nThis is the most important decision you will ever make. Heaven rejoices when one person comes to Christ!",
+                verse: "Romans 10:9 — 'If you declare with your mouth, Jesus is Lord, and believe in your heart that God raised Him from the dead, you will be saved.'"
+            },
+
+            // ── FAITH ─────────────────────────────────────────────────
+            {
+                keywords: ["what is faith", "faith meaning", "definition of faith"],
+                answer: "Faith is confident trust and belief in God and His Word, even when circumstances suggest otherwise. It is not blind belief but a reasoned, life-transforming trust. Christian faith is based on the historical reality of Jesus Christ, the reliability of Scripture, and the personal experience of God's work in our lives.",
+                verse: "Hebrews 11:1 — 'Now faith is confidence in what we hope for and assurance about what we do not see.'"
+            },
+            {
+                keywords: ["strengthen faith", "grow faith", "increase faith", "how to have faith"],
+                answer: "To strengthen your faith:\n• Read and meditate on God's Word daily.\n• Pray consistently — faith grows through relationship.\n• Remember God's past faithfulness in your life.\n• Surround yourself with faith-filled believers.\n• Trust God through trials — faith is built in the fire.\n• Serve others and put your faith into action.",
+                verse: "Romans 10:17 — 'Faith comes from hearing the message, and the message is heard through the word about Christ.'"
+            },
+
+            // ── FORGIVENESS ───────────────────────────────────────────
+            {
+                keywords: ["forgiveness", "what is forgiveness", "how to forgive", "forgiving others"],
+                answer: "Forgiveness is releasing someone from the debt they owe you for hurting you. In Christianity, God freely forgives all who come to Him through Jesus. Christians are called to forgive others — not because the offender deserves it, but because God has forgiven us. Forgiveness is not excusing sin; it is freeing yourself from bitterness and trusting God with justice.",
+                verse: "Ephesians 4:32 — 'Be kind and compassionate to one another, forgiving each other, just as in Christ God forgave you.'"
+            },
+            {
+                keywords: ["god forgive me", "can god forgive", "forgiven by god"],
+                answer: "Yes! God's forgiveness is complete and unconditional for all who come to Him with sincere repentance. No sin is too great for God's mercy. The cross of Jesus was the payment for every sin — past, present, and future. When you confess your sins to God, He forgives and cleanses you completely.",
+                verse: "1 John 1:9 — 'If we confess our sins, He is faithful and just and will forgive us our sins and purify us from all unrighteousness.'"
+            },
+
+            // ── LOVE ──────────────────────────────────────────────────
+            {
+                keywords: ["what does bible say about love", "love bible", "god is love", "christian love"],
+                answer: "Love is the very nature of God and the heart of all Christian teaching. The Bible describes true love (agape) in 1 Corinthians 13 as patient, kind, not envious, not boastful, not self-seeking, and never failing. God's love is unconditional — He loves us not because of what we do, but because of who He is.",
+                verse: "1 Corinthians 13:13 — 'And now these three remain: faith, hope and love. But the greatest of these is love.'"
+            },
+
+            // ── HOPE ──────────────────────────────────────────────────
+            {
+                keywords: ["hope bible", "christian hope", "what is hope", "bible about hope"],
+                answer: "Christian hope is not wishful thinking — it is certain confidence in God's promises. Our hope is anchored in the resurrection of Jesus Christ, which guarantees our own resurrection and eternal life. Even in suffering, Christians can have joy because they know God is working all things for good and eternity is brighter than any present pain.",
+                verse: "Romans 15:13 — 'May the God of hope fill you with all joy and peace as you trust in Him, so that you may overflow with hope by the power of the Holy Spirit.'"
+            },
+
+            // ── PEACE ─────────────────────────────────────────────────
+            {
+                keywords: ["peace bible", "christian peace", "god give peace", "peace of mind"],
+                answer: "The peace God gives is unlike anything the world offers. It is a deep, soul-level calm that transcends circumstances — even in the middle of storms, loss, or uncertainty. This peace comes from trusting God completely, surrendering your worries to Him in prayer, and knowing that He is in control of all things.",
+                verse: "Philippians 4:7 — 'And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.'"
+            },
+
+            // ── HOLY SPIRIT ───────────────────────────────────────────
+            {
+                keywords: ["holy spirit", "who is the holy spirit", "spirit of god"],
+                answer: "The Holy Spirit is the third Person of the Trinity — fully God. He came to dwell in every believer after Jesus ascended to heaven. The Holy Spirit guides believers into truth, convicts of sin, empowers for service, produces the fruit of love/joy/peace in our lives, helps us pray, and seals us for eternal salvation.",
+                verse: "Galatians 5:22-23 — 'But the fruit of the Spirit is love, joy, peace, forbearance, kindness, goodness, faithfulness, gentleness and self-control.'"
+            },
+
+            // ── HEAVEN & HELL ─────────────────────────────────────────
+            {
+                keywords: ["what is heaven", "heaven bible", "heaven christian"],
+                answer: "Heaven is the eternal dwelling place of God and of all who are saved through faith in Jesus Christ. It is described as a place of perfect joy, no more pain, tears, death, or sin. Believers will see God face to face, worship Him in glory, and experience fulfillment beyond anything this world can offer. Our best day on earth is a pale shadow of what heaven will be.",
+                verse: "Revelation 21:4 — 'He will wipe every tear from their eyes. There will be no more death or mourning or crying or pain.'"
+            },
+            {
+                keywords: ["hell bible", "what is hell", "hell christian"],
+                answer: "Hell is the place of eternal separation from God — the ultimate consequence of rejecting His gift of salvation. It is described in the Bible as a place of outer darkness, weeping, and eternal suffering. God does not desire anyone to go there, which is why He sent Jesus — so that everyone who believes will be saved and not perish.",
+                verse: "John 3:16 — 'For God so loved the world that He gave His one and only Son, that whoever believes in Him shall not perish but have eternal life.'"
+            },
+
+            // ── SIN ───────────────────────────────────────────────────
+            {
+                keywords: ["what is sin", "sin bible", "definition sin"],
+                answer: "Sin is any thought, word, action, or attitude that falls short of God's perfect standard — it is rebellion against God. The Bible says all humans have sinned and fallen short of God's glory. Sin separates us from God, but through Jesus Christ, sin is completely forgiven and its power broken in the lives of those who trust in Him.",
+                verse: "Romans 3:23 — 'For all have sinned and fall short of the glory of God.'"
+            },
+            {
+                keywords: ["how to overcome sin", "stop sinning", "temptation"],
+                answer: "Overcoming sin is a lifelong journey of growth in Christ. Key steps:\n• Stay close to God through daily prayer and Scripture.\n• Flee situations that lead to temptation (don't just resist — flee!).\n• Confess sin immediately and receive God's forgiveness.\n• Renew your mind with God's Word.\n• Seek accountability with trusted believers.\n• Remember: the Holy Spirit empowers you — you are not fighting alone.",
+                verse: "1 Corinthians 10:13 — 'God is faithful; He will not let you be tempted beyond what you can bear.'"
+            },
+
+            // ── WORSHIP ───────────────────────────────────────────────
+            {
+                keywords: ["what is worship", "why worship", "importance of worship"],
+                answer: "Worship is the response of our whole being — heart, mind, soul, and strength — to the greatness, goodness, and glory of God. It includes singing praise, prayer, giving, serving, reading Scripture, and living obediently. True worship is not a Sunday activity but a way of life. When we worship, we acknowledge God's worth and align our hearts with His.",
+                verse: "John 4:24 — 'God is spirit, and His worshipers must worship in the Spirit and in truth.'"
+            },
+
+            // ── BAPTISM ───────────────────────────────────────────────
+            {
+                keywords: ["what is baptism", "baptism meaning", "christian baptism"],
+                answer: "Baptism is a public declaration of faith — an outward symbol of an inward transformation. Going under the water represents death to your old sinful self; coming up represents resurrection to a new life in Christ. Jesus Himself was baptized and commanded His followers to baptize new believers. It is a powerful first act of obedience after salvation.",
+                verse: "Acts 2:38 — 'Repent and be baptized, every one of you, in the name of Jesus Christ for the forgiveness of your sins.'"
+            },
+
+            // ── SPIRITUAL GROWTH ──────────────────────────────────────
+            {
+                keywords: ["spiritual growth", "grow spiritually", "mature in christ", "spiritual maturity"],
+                answer: "Spiritual growth (sanctification) is the lifelong process of becoming more like Jesus. It involves:\n• Daily Bible reading and meditation.\n• Consistent prayer life.\n• Active participation in a local church.\n• Serving others with your gifts.\n• Giving generously.\n• Sharing your faith.\n• Enduring hardships with trust in God.\nGrowth is not instant — it is a journey of daily surrender.",
+                verse: "2 Peter 3:18 — 'But grow in the grace and knowledge of our Lord and Savior Jesus Christ.'"
+            },
+
+            // ── CHRISTIAN LIVING ──────────────────────────────────────
+            {
+                keywords: ["how to live christian", "christian lifestyle", "christian life", "living for god"],
+                answer: "Christian living means following Jesus in every area of life — not just on Sundays. It includes treating others with love and respect, being honest in all dealings, pursuing purity of heart and mind, forgiving those who wrong you, trusting God in every decision, using your talents to glorify God, and being a light to those around you.",
+                verse: "Colossians 3:17 — 'And whatever you do, whether in word or deed, do it all in the name of the Lord Jesus, giving thanks to God the Father through Him.'"
+            },
+            {
+                keywords: ["anxiety worry fear", "afraid fear", "overcome anxiety", "worry god"],
+                answer: "God addresses fear and anxiety directly throughout Scripture. He says 'Do not fear' or 'Do not be afraid' over 365 times in the Bible — one for every day of the year! When anxiety rises, bring every worry to God in prayer. Trust that He who created you knows your needs, loves you deeply, and is working all things together for your good.",
+                verse: "Isaiah 41:10 — 'Do not fear, for I am with you; do not be dismayed, for I am your God. I will strengthen you and help you.'"
+            },
+            {
+                keywords: ["purpose life", "meaning of life", "why am i here", "god purpose"],
+                answer: "According to the Bible, your ultimate purpose is to know God, love Him, and bring glory to His name. You were not an accident — God designed you uniquely and has a specific plan for your life. Your daily purpose includes loving and serving others, growing in Christlikeness, and sharing the good news of the gospel.",
+                verse: "Jeremiah 29:11 — 'For I know the plans I have for you, declares the Lord, plans to prosper you and not harm you, plans to give you hope and a future.'"
+            },
+            {
+                keywords: ["encouragement motivation christian", "feel discouraged", "feeling hopeless"],
+                answer: "Friend, God sees every tear you cry and knows every burden you carry. You are not alone. Even the greatest heroes of the Bible — Moses, David, Elijah, Paul — had moments of deep discouragement. But God never abandoned them, and He will not abandon you. Hold on. Your breakthrough is coming. This season will pass, and you will come out stronger.",
+                verse: "Psalm 34:18 — 'The Lord is close to the brokenhearted and saves those who are crushed in spirit.'"
+            },
+            {
+                keywords: ["tithe giving offering", "tithing bible", "christian giving"],
+                answer: "The Bible teaches that giving (tithing 10% and offerings beyond that) is an act of worship and trust in God. When we give generously, we declare that God is our provider — not money. God blesses cheerful, generous givers and uses our giving to advance His kingdom, support the church, and bless others.",
+                verse: "2 Corinthians 9:7 — 'God loves a cheerful giver.'"
+            },
+            {
+                keywords: ["church importance", "why go to church", "attend church"],
+                answer: "The church is the family of God — a community of believers who worship together, learn together, support each other, and serve the world together. Regular attendance in a local church is vital for spiritual growth, accountability, encouragement, and using your gifts to serve. You were not designed to walk the Christian life alone.",
+                verse: "Hebrews 10:24-25 — 'And let us consider how we may spur one another on toward love and good deeds, not giving up meeting together.'"
+            },
+            {
+                keywords: ["what is grace", "grace of god", "meaning grace"],
+                answer: "Grace is God giving us what we do not deserve — forgiveness, love, salvation, and blessings — purely out of His goodness and not because of anything we have done. Grace is the heart of the Gospel. We are saved by grace through faith, not by our own efforts or moral achievement.",
+                verse: "Ephesians 2:8 — 'For it is by grace you have been saved, through faith — and this is not from yourselves, it is the gift of God.'"
+            },
+            {
+                keywords: ["suffering pain why", "why does god allow suffering", "pain bible"],
+                answer: "This is one of life's hardest questions. The Bible teaches that suffering entered the world through sin, but God can use suffering to produce character, deepen faith, draw us closer to Him, and equip us to comfort others. God does not waste pain. Jesus Himself suffered more than anyone and can empathize with our deepest pain.",
+                verse: "Romans 5:3-4 — 'Suffering produces perseverance; perseverance, character; and character, hope.'"
+            },
+
+            // ── FALLBACK / GREETING ───────────────────────────────────
+            {
+                keywords: ["hello", "hi", "hey", "greetings", "good morning", "good evening", "salam"],
+                answer: "Peace be upon you! 🙏 Welcome to the Christian AI Assistant. I'm here to answer your questions about the Bible, Jesus, faith, prayer, salvation, and Christian living. What would you like to know today?",
+                verse: null
+            },
+            {
+                keywords: ["thank you", "thanks", "thank u"],
+                answer: "You're very welcome! 🙏 It's a blessing to help you on your spiritual journey. Remember — God loves you deeply and His Word is a lamp to your feet. Feel free to ask anything else!",
+                verse: null
+            }
+        ];
+
+        /* ============================================================
+           WELCOME MESSAGE
+        ============================================================ */
+        const WELCOME = {
+            text: "Welcome! I'm your Christian AI Assistant — here to help you explore the Bible, understand your faith, and find spiritual encouragement. You can ask me about Jesus, prayer, salvation, forgiveness, heaven, the Holy Spirit, and much more. What question is on your heart today? 🙏✝️",
+            verse: "Matthew 7:7 — 'Ask and it will be given to you; seek and you will find; knock and the door will be opened to you.'"
+        };
+
+        /* ============================================================
+           STATE & DOM REFS
+        ============================================================ */
+        const messagesArea = document.getElementById("messagesArea");
+        const typingIndicator = document.getElementById("typingIndicator");
+        const inputField = document.getElementById("inputField");
+        const sendBtn = document.getElementById("sendBtn");
+        const themeBtn = document.getElementById("themeBtn");
+        const clearBtn = document.getElementById("clearBtn");
+        const suggestionsArea = document.getElementById("suggestionsArea");
+
+        let isTyping = false;
+
+        /* ============================================================
+           UTILITIES
+        ============================================================ */
+        function getTime() {
+            return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        }
+
+        function normalize(str) {
+            return str.toLowerCase().replace(/[^a-z0-9\s]/g, "").trim();
+        }
+
+        function autoResizeInput() {
+            inputField.style.height = "auto";
+            inputField.style.height = Math.min(inputField.scrollHeight, 120) + "px";
+        }
+
+        function scrollToBottom() {
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+        }
+
+        /* ============================================================
+           SEARCH ENGINE
+        ============================================================ */
+        function findAnswer(userText) {
+            const query = normalize(userText);
+            let bestMatch = null;
+            let bestScore = 0;
+
+            for (const item of QA_DATABASE) {
+                let score = 0;
+                for (const kw of item.keywords) {
+                    if (query.includes(normalize(kw))) {
+                        score += kw.split(" ").length; // longer matches score higher
+                    }
+                }
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMatch = item;
+                }
+            }
+
+            if (bestMatch && bestScore > 0) return bestMatch;
+
+            // Generic fallback
+            return {
+                answer: "That's a wonderful question! While I may not have a specific answer for that exact phrasing, I encourage you to explore God's Word — the Bible is the ultimate source of wisdom and truth. You can ask me about Jesus, prayer, salvation, forgiveness, faith, the Holy Spirit, heaven, worship, baptism, and much more. 🙏",
+                verse: "Psalm 119:105 — 'Your word is a lamp for my feet, a light on my path.'"
+            };
+        }
+
+        /* ============================================================
+           RENDER MESSAGES
+        ============================================================ */
+        function appendMessage(type, text, verse) {
+            const wrapper = document.createElement("div");
+            wrapper.className = "message " + type;
+
+            const avatar = document.createElement("div");
+            avatar.className = "avatar " + (type === "bot" ? "bot-avatar" : "user-avatar");
+            avatar.textContent = type === "bot" ? "✝" : "👤";
+
+            const bubbleWrap = document.createElement("div");
+            bubbleWrap.className = "bubble-wrap";
+
+            const bubble = document.createElement("div");
+            bubble.className = "bubble";
+
+            // Convert newlines to <br>
+            bubble.innerHTML = text.replace(/\n/g, "<br/>");
+
+            if (verse) {
+                const tag = document.createElement("div");
+                tag.className = "verse-tag";
+                tag.textContent = "📖 " + verse;
+                bubble.appendChild(tag);
+            }
+
+            const ts = document.createElement("div");
+            ts.className = "timestamp";
+            ts.textContent = getTime();
+
+            bubbleWrap.appendChild(bubble);
+            bubbleWrap.appendChild(ts);
+            wrapper.appendChild(avatar);
+            wrapper.appendChild(bubbleWrap);
+            messagesArea.appendChild(wrapper);
+
+            scrollToBottom();
+            saveHistory();
+        }
+
+        /* ============================================================
+           TYPING ANIMATION
+        ============================================================ */
+        function showTyping() {
+            typingIndicator.classList.add("visible");
+            scrollToBottom();
+        }
+
+        function hideTyping() {
+            typingIndicator.classList.remove("visible");
+        }
+
+        /* ============================================================
+           SEND MESSAGE
+        ============================================================ */
+        function sendMessage() {
+            const text = inputField.value.trim();
+            if (!text || isTyping) return;
+
+            appendMessage("user", text, null);
+            inputField.value = "";
+            inputField.style.height = "auto";
+
+            isTyping = true;
+            sendBtn.disabled = true;
+            showTyping();
+
+            const delay = 800 + Math.random() * 700;
+
+            setTimeout(function () {
+                hideTyping();
+                const result = findAnswer(text);
+                appendMessage("bot", result.answer, result.verse || null);
+                isTyping = false;
+                sendBtn.disabled = false;
+                inputField.focus();
+            }, delay);
+        }
+
+        /* ============================================================
+           LOCAL STORAGE
+        ============================================================ */
+        function saveHistory() {
+            try {
+                const nodes = messagesArea.querySelectorAll(".message");
+                const history = [];
+                nodes.forEach(function (node) {
+                    const type = node.classList.contains("user") ? "user" : "bot";
+                    const bubble = node.querySelector(".bubble");
+                    const verse = node.querySelector(".verse-tag");
+                    history.push({
+                        type: type,
+                        text: bubble ? bubble.innerHTML.replace(/<div class="verse-tag">.*<\/div>/s, "").replace(/<br\/?>/g, "\n") : "",
+                        verse: verse ? verse.textContent.replace("📖 ", "") : null
+                    });
+                });
+                localStorage.setItem("christian_chat_history", JSON.stringify(history));
+            } catch (e) {
+                // storage unavailable — silently ignore
+            }
+        }
+
+        function loadHistory() {
+            try {
+                const raw = localStorage.getItem("christian_chat_history");
+                if (!raw) return false;
+                const history = JSON.parse(raw);
+                if (!Array.isArray(history) || history.length === 0) return false;
+                history.forEach(function (item) {
+                    appendMessage(item.type, item.text || "", item.verse || null);
+                });
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        /* ============================================================
+           THEME TOGGLE
+        ============================================================ */
+        function initTheme() {
+            const saved = localStorage.getItem("christian_theme");
+            if (saved === "light") {
+                document.body.classList.add("light");
+                themeBtn.textContent = "☀️";
+            }
+        }
+
+        themeBtn.addEventListener("click", function () {
+            document.body.classList.toggle("light");
+            const isLight = document.body.classList.contains("light");
+            themeBtn.textContent = isLight ? "☀️" : "🌙";
+            localStorage.setItem("christian_theme", isLight ? "light" : "dark");
+        });
+
+        /* ============================================================
+           CLEAR CHAT
+        ============================================================ */
+        clearBtn.addEventListener("click", function () {
+            if (!confirm("Clear all chat history? This cannot be undone.")) return;
+            messagesArea.innerHTML = "";
+            localStorage.removeItem("christian_chat_history");
+            appendMessage("bot", WELCOME.text, WELCOME.verse);
+        });
+
+        /* ============================================================
+           SUGGESTION CHIPS
+        ============================================================ */
+        suggestionsArea.addEventListener("click", function (e) {
+            const chip = e.target.closest(".suggestion-chip");
+            if (!chip) return;
+            inputField.value = chip.getAttribute("data-query");
+            sendMessage();
+        });
+
+        /* ============================================================
+           INPUT EVENTS
+        ============================================================ */
+        sendBtn.addEventListener("click", sendMessage);
+
+        inputField.addEventListener("keydown", function (e) {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        inputField.addEventListener("input", autoResizeInput);
+
+        /* ============================================================
+           INIT
+        ============================================================ */
+        (function init() {
+            initTheme();
+            const hasHistory = loadHistory();
+            if (!hasHistory) {
+                appendMessage("bot", WELCOME.text, WELCOME.verse);
+            }
+            inputField.focus();
+        })();
+    </script>
+
+</body>
+
+</html>
